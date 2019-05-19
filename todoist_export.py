@@ -1,11 +1,7 @@
 # Todoist Export for Python 3
 
 from todoist.api import TodoistAPI
-
 import pandas as pd
-
-from datetime import datetime
-
 import json
 
 # Authentification
@@ -23,22 +19,27 @@ api.sync()
 user = api.state['user']
 user_name = user['full_name']
 
-# Stats: Tasks Completed by User
-user_completed_count = user['completed_count']
 
 #  User Projects
-user_projects  = api.state['projects']
+
+user_projects = api.state['projects']
+
+print("Creating Export of Current Todoist Projects")
+
 with open('data/todoist-projects.csv', 'w') as file:
     file.write("Id" + "," + "Project" + "\n")
     for i in range(0, len(user_projects)):
         file.write('\"' + str(user_projects[i]['id']) + '\"' + "," + '\"' + str(user_projects[i]['name']) + '\"' + "\n")
-print("Creating Export of Current Todoist Projects")
-projects = pd.read_csv("data/todoist-projects.csv")
 
+projects = pd.read_csv("data/todoist-projects.csv")
+    
 # User Stats
+
 stats = api.completed.get_stats()
+user_completed_count = stats['completed_count']
 
 # total completed tasks from stats
+
 user_completed_stats = stats['completed_count']
 user_completed_stats
 
