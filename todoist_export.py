@@ -23,29 +23,23 @@ user_name = user['full_name']
 #  User Projects
 
 user_projects = api.state['projects']
-
+projects = pd.DataFrame([p.data for p in user_projects])
 print("Creating Export of Current Todoist Projects")
-
-with open('data/todoist-projects.csv', 'w') as file:
-    file.write("Id" + "," + "Project" + "\n")
-    for i in range(0, len(user_projects)):
-        file.write('\"' + str(user_projects[i]['id']) + '\"' + "," + '\"' + str(user_projects[i]['name']) + '\"' + "\n")
-
-projects = pd.read_csv("data/todoist-projects.csv")
+pd.write_csv("data/todoist-projects.csv")
     
 # User Stats
 
 stats = api.completed.get_stats()
+
 user_completed_count = stats['completed_count']
-
-# total completed tasks from stats
-
 user_completed_stats = stats['completed_count']
-user_completed_stats
 
 # Export Completed Todoist Items
+
 def get_completed_todoist_items():
+
     # create df from initial 50 completed tasks
+
     print("Collecting Initial 50 Completed Todoist Tasks...")
     temp_tasks_dict = (api.completed.get_all(limit=50))
     past_tasks = pd.DataFrame.from_dict(temp_tasks_dict['items'])
@@ -97,6 +91,7 @@ print("Assigning Project Name on Tasks...")
 past_tasks['project_name'] = past_tasks['project_id'].apply(project_lookup)
 
 # Add Day of Week Completed
+
 past_tasks['completed_date'] = pd.to_datetime(past_tasks['completed_date'])
 past_tasks['dow'] = past_tasks['completed_date'].dt.weekday
 past_tasks['day_of_week'] = past_tasks['completed_date'].dt.weekday_name
@@ -104,46 +99,24 @@ past_tasks['day_of_week'] = past_tasks['completed_date'].dt.weekday_name
 # save to CSV
 past_tasks.to_csv("data/todost-tasks-completed.csv", index=False)
 
-# Export of Current Tasks
-# Hackish Solution, Needs Improvement
-available_task_items = api.state['items']
-with open('data/current-tasks-raw.csv', 'w') as file:
-    print("Generating and Creating A Raw Export of Current Todoist Tasks")
-    file.write("id,content,checked,date_string,project_id,date_added,due_date_utc,date_completed \n")
-    for i in list(range(0, len(available_task_items))): 
-        if (available_task_items[i]['checked'] == 0):
-            id = available_task_items[i]['id']
-            content = available_task_items[i]['content']
-            checked = available_task_items[i]['checked']
-            date_string = available_task_items[i]['date_string']
-            date_added = available_task_items[i]['date_added']
-            project_id = available_task_items[i]['project_id']
-            due_date_utc = available_task_items[i]['due_date_utc']
-            date_completed = available_task_items[i]['date_completed']
-            # print("id + "," + str(due_date_utc))
-            file.write(str(id) 
-                       + "," + '\"' + content + '\"' + "," 
-                       + str(checked) + "," 
-                       # + str(date_string) + "," 
-                       + str(date_added)  + "," 
-                       + str(project_id)  + "," 
-                       + str(due_date_utc)  + "," 
-                       + str(date_completed)                   
-                       + "\n")
+items_df = pd.DataFrame(i.data for i in api.state['items'])
+items_df.to_csv('data/current-tasks-raw.csv')
 
-# df of current tasks
-currents_task = pd.read_csv('data/current-tasks-raw.csv')
 
 # Add project name to df
-currents_task['project_name'] = currents_task['project_id'].apply(project_lookup)
 
-# Date Added Cleanup
-currents_task['date_added'] = currents_task['date_added'].replace(to_replace="None", value='')
+current_tasks = items_df.merge(
+    projects[['id', 'name']],
+    left_on='project_id',
+    right_on='id'
+)
+
 
 # Add Day of Week Added
-currents_task['date_added'] = pd.to_datetime(currents_task['date_added'])
-currents_task['dow_added'] = currents_task['date_added'].dt.weekday
-currents_task['day_of_week_added'] = currents_task['date_added'].dt.weekday_name
+
+current_tasks['date_added'] = pd.to_datetime(current_tasks['date_added'])
+current_tasks['dow_added'] = current_tasks['date_added'].dt.weekday
+current_tasks['day_of_week_added'] = current_tasks['date_added'].dt.weekday_name
 
 print("Generating Processed Export of Current Todoist Tasks")
-currents_task.to_csv('data/current-tasks.csv', index=False)
+current_tasks.to_csv('data/current-tasks.csv', index=False)
