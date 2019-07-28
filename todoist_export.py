@@ -25,7 +25,7 @@ user_name = user['full_name']
 user_projects = api.state['projects']
 projects = pd.DataFrame([p.data for p in user_projects])
 print("Creating Export of Current Todoist Projects")
-pd.write_csv("data/todoist-projects.csv")
+df.write_csv("data/todoist-projects.csv")
     
 # User Stats
 
